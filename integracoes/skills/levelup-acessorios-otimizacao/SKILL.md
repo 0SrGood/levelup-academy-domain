@@ -1,44 +1,56 @@
 ---
 name: levelup-acessorios-otimizacao
-description: Otimizar acessórios do Studio Up para o catálogo e para celulares fracos: triângulos, número de peças, CSG, textura e tamanho, sem perder a silhueta.
+description: Modelar acessórios do Studio Up com boa forma e bom desempenho. A engine otimiza os triângulos sozinha; aqui ficam as regras de peças, peças arredondadas, partes escondidas, escala e textura.
 ---
 
-# Otimizar acessórios (catálogo e celular)
+# Acessórios: forma boa sem se preocupar com triângulos
 
-Use sempre que modelar, corrigir ou revisar um acessório (chapéu, cabelo, óculos, colar, mochila, asas...). Leia junto levelup-acessorios. A validação do editor mostra avisos; a resposta só está boa quando não sobra nenhum aviso evitável.
+Use sempre que modelar, corrigir ou revisar um acessório (chapéu, cabelo, óculos, colar, mochila, asas...). Leia junto levelup-acessorios e levelup-acessorios-textura.
 
-## Metas que a validação confere
+## Quem otimiza é a engine
 
-| Item | Ideal | Máximo aceito |
-|---|---|---|
-| Triângulos do acessório inteiro | até 2.000 | 4.000 (acima disso o envio é recusado) |
-| Peças antes de preparar a textura | até 12 | 24 |
-| Textura PNG (6 vistas) | Normal (célula 256) | 2048 px no lado maior |
-| Caixa do item | dentro da caixa do ponto (a validação mostra) | — |
+Ao preparar a textura (operação `accessory_texture` ou Textura → Preparar textura), a engine:
 
-Ao publicar, todas as peças viram UMA malha só com UMA textura PNG. Peças demais não somem: viram triângulos.
+- junta todas as peças numa malha só;
+- junta os vértices repetidos;
+- se passar de 10.000 triângulos, simplifica a malha sozinha.
 
-## Onde os triângulos estão
+Por isso, **não piore a forma para economizar triângulos** e não escreva avisos de triângulos no resumo. Use curvas e cantos arredondados quando eles deixam o item mais bonito.
 
-- Bloco e cunha: 12 triângulos. Use para tudo que for reto.
-- Cilindro: ~64 triângulos; esfera: ~200 ou mais. Use só onde a curva aparece de longe.
-- CSG (unir/negar): cada recorte soma os triângulos das peças e cria faces novas. Um furo redondo num bloco pode passar de 150 triângulos.
-- Detalhe menor que 0,1 stud quase não aparece no celular: desenhe na textura em vez de modelar.
+| Item | Limite |
+|---|---|
+| Triângulos | 10.000 (a engine simplifica acima disso) |
+| Peças antes de preparar a textura | 24 |
+| Textura PNG (6 vistas) | Normal (célula 256); máximo 2048 px no lado maior |
+| Caixa do item | dentro da caixa do ponto (a validação mostra) |
 
-## Regras de otimização
+## Peças arredondadas (round_part)
 
-1. **Silhueta primeiro**: 3 a 8 volumes grandes que já lembram o objeto de longe. Só depois detalhes.
-2. **Detalhe pequeno vai para a textura** (botões, costuras, logos, listras, olhos de bichinho): pinte no PNG; não modele.
-3. **Curvas só onde importam**: copa de chapéu redonda sim; parafusos, rebites e bordas finas não.
-4. **Recortes com moderação**: use negate só para furos que se veem (lente de óculos, aro). Junte cortes vizinhos num só cortador.
-5. **Nada escondido**: peça dentro de outra peça ou encostada no corpo, que nunca aparece, deve ser apagada.
-6. **Simetria**: modele um lado e espelhe; não duplique detalhes que ficam atrás do corpo.
-7. **Handle**: se o Handle não faz parte do visual, deixe-o pequeno (0,2 stud) e dentro da peça principal. Peças com Transparency 1 não entram na malha nem na textura, mas continuam valendo para o encaixe.
-8. **Cores planejadas**: poucas cores lisas por peça; a pintura fina é feita depois, na aba Textura.
-9. **Escala certa**: o item deve caber na caixa do ponto de fixação (a validação avisa). Item grande demais atrapalha a câmera e os outros jogadores.
+Para não fazer tudo com cantos retos, use `round_part` com `shape`:
+
+| shape | Para que serve |
+|---|---|
+| cubo-chanfrado, cubo-arredondado, cubo-suave, cubo-quinas | blocos com borda suave (fivelas, caixas, pontes de óculos, botões) |
+| cilindro-arredondado, coluna | hastes, alças, pernas de óculos, pinos |
+| tubo, tubo-fino | canos, anéis grossos, chaminés de chapéu |
+| aro, aro-fino | argolas, brincos, lentes redondas, auréolas |
+| moldura (aro quadrado) | armação de óculos quadrada com cantos redondos (achate a altura e gire 90° em X), molduras |
+| prisma | orelhas, pontas, bicos, telhadinhos |
+
+As peças arredondadas não entram em union/negate: posicione, gire, escale e solde ao Handle.
+
+## Regras
+
+1. **Silhueta primeiro**: volumes grandes que já lembram o objeto de longe; detalhes depois.
+2. **Detalhe muito pequeno vai para a textura** (costuras, logos, listras finas).
+3. **Nada escondido**: peça dentro de outra, ou encostada no corpo e que nunca aparece, deve ser apagada.
+4. **Simetria**: modele um lado e espelhe.
+5. **Handle**: se não faz parte do visual, deixe-o pequeno e com Transparency 1. Peças com Transparency 1 não entram na malha nem na textura.
+6. **Cores planejadas**: uma cor base por peça; o degradê e a sombra vêm da textura (levelup-acessorios-textura).
+7. **Escala certa**: o item deve caber na caixa do ponto de fixação.
 
 ## Ao terminar (escreva no resumo)
 
-- Contagem estimada de peças e triângulos e o que foi simplificado.
-- O que ficou para pintar na textura.
-- Próximos passos do usuário: Textura → Preparar textura → pintar/conferir as 6 vistas → Validar → Testar andando → Publicar.
+- Peças usadas (inclusive as arredondadas) e o que ficou para pintar.
+- Que a textura é preparada ao aplicar (accessory_texture) e que o usuário pode pintar por cima.
+- Próximos passos: conferir as 6 vistas → Validar → Testar andando → Publicar.
